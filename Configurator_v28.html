@@ -1616,10 +1616,8 @@ async function render() {
     openingBacking.style.width = width; openingBacking.style.height = height;
     const edgeTrimPx = DRAWER_EDGE_TRIM_PX[cabId] ?? 0;
     layerDrawer.style.clipPath = edgeTrimPx ? `inset(0 ${edgeTrimPx}px)` : '';
-    if (edgeTrimPx) {
-      openingBacking.style.left = `calc(${layerDrawer.style.left} + ${edgeTrimPx}px)`;
-      openingBacking.style.width = `calc(${layerDrawer.style.width} - ${2 * edgeTrimPx}px)`;
-    }
+    // Paint exposed side seams without widening the drawer artwork.
+    openingBacking.style.backgroundColor = isDesign2 ? drawerColor : '#1a1a1a';
   } else {
     layerDrawer.style.display = 'none';
     openingBacking.style.display = 'none';
@@ -2228,14 +2226,10 @@ async function buildCompositeCanvas(size) {
     let dx = drawerLeftFrac * SIZE, dw = drawerWidthFrac * SIZE;
     const dy = drawerTopFrac * HEIGHT, dh = drawerHeightFrac * HEIGHT;
 
-    // Dark backing behind the drawer, matching the live preview's
-    // .opening-backing -- otherwise any gap the drawer front doesn't cover
-    // shows the white page background through it.
-    ctx.fillStyle = '#1a1a1a';
+    // Match the preview: Design 2 seams inherit the drawer finish.
+    ctx.fillStyle = isDesign2 ? drawerColor : '#1a1a1a';
     const edgeTrimPx = (DRAWER_EDGE_TRIM_PX[cabId] ?? 0) * (SIZE / STAGE_SIZE_PX);
-    const backingInsetPx = edgeTrimPx
-      ? edgeTrimPx + (DRAWER_SIDE_INSET_PX[cabId] ?? 0) * (SIZE / STAGE_SIZE_PX) : 0;
-    ctx.fillRect(dx + backingInsetPx, dy, dw - 2 * backingInsetPx, dh);
+    ctx.fillRect(dx, dy, dw, dh);
 
     const drawerInsetPx = (DRAWER_SIDE_INSET_PX[cabId] ?? 0) * (SIZE / STAGE_SIZE_PX);
     dx += drawerInsetPx;
