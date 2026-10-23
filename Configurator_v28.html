@@ -1317,8 +1317,11 @@ const STAGE_SIZE_PX = 480;
 // is expected). Increase this if any overlap remains, or lower it if it
 // opens a visible gap instead.
 const BASE_GAP_NUDGE_PX = 0.5;
-// Close the seam on Design 2 bases 1 and 2; exports scale this adjustment.
-const BASE_VERTICAL_OFFSET_PX = { base01: -1, base02: -1 };
+// Close seams on individual Design 2 bases; exports scale these adjustments.
+const BASE_VERTICAL_OFFSET_PX = {
+  base01: -1, base02: -1,
+  base05: -2, base06: -2, base07: -2, base08: -2, base09: -2, base10: -2,
+};
 
 // base13 is the only base style meant to sit inset from the case rather
 // than flush with it -- pulled in by this many pixels on each side (at
