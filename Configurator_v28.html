@@ -1272,6 +1272,8 @@ const CAB2_CASE_RIGHT_FRAC = { cab2_01: 0.8537, cab2_03: 0.994 };
 const CAB2_DRAWER_BASELINE_ID = 'cab2_01';
 // Per-side drawer inset in preview pixels; cabinet artwork keeps its size.
 const DRAWER_SIDE_INSET_PX = { cab2_01: 1 };
+// Trim only the vertical drawer edges, without scaling interior details.
+const DRAWER_EDGE_TRIM_PX = { cab2_01: 1 };
 
 // Measured left/right edges of each base style's own visible leg span
 // within its viewBox (most styles have a small margin on one or both sides
@@ -1612,6 +1614,12 @@ async function render() {
     openingBacking.style.display = '';
     openingBacking.style.left = left; openingBacking.style.top = top;
     openingBacking.style.width = width; openingBacking.style.height = height;
+    const edgeTrimPx = DRAWER_EDGE_TRIM_PX[cabId] ?? 0;
+    layerDrawer.style.clipPath = edgeTrimPx ? `inset(0 ${edgeTrimPx}px)` : '';
+    if (edgeTrimPx) {
+      openingBacking.style.left = `calc(${layerDrawer.style.left} + ${edgeTrimPx}px)`;
+      openingBacking.style.width = `calc(${layerDrawer.style.width} - ${2 * edgeTrimPx}px)`;
+    }
   } else {
     layerDrawer.style.display = 'none';
     openingBacking.style.display = 'none';
@@ -2224,14 +2232,22 @@ async function buildCompositeCanvas(size) {
     // .opening-backing -- otherwise any gap the drawer front doesn't cover
     // shows the white page background through it.
     ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(dx, dy, dw, dh);
+    const edgeTrimPx = (DRAWER_EDGE_TRIM_PX[cabId] ?? 0) * (SIZE / STAGE_SIZE_PX);
+    const backingInsetPx = edgeTrimPx
+      ? edgeTrimPx + (DRAWER_SIDE_INSET_PX[cabId] ?? 0) * (SIZE / STAGE_SIZE_PX) : 0;
+    ctx.fillRect(dx + backingInsetPx, dy, dw - 2 * backingInsetPx, dh);
 
     const drawerInsetPx = (DRAWER_SIDE_INSET_PX[cabId] ?? 0) * (SIZE / STAGE_SIZE_PX);
     dx += drawerInsetPx;
     dw -= 2 * drawerInsetPx;
 
     const drTinted = await tintSurfaceCanvas(svgPath('drawers', locked.drawers), drawerColor, Math.round(dw), Math.round(dh));
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(dx + edgeTrimPx, dy, dw - 2 * edgeTrimPx, dh);
+    ctx.clip();
     ctx.drawImage(drTinted, dx, dy, dw, dh);
+    ctx.restore();
 
     if (locked.hardware && locked.hardware !== 'none') {
       const hwMeta = await loadMeta('hardware', locked.hardware);
