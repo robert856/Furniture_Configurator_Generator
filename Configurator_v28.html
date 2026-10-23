@@ -1270,6 +1270,8 @@ const CAB2_CASE_RIGHT_FRAC = { cab2_01: 0.8537, cab2_03: 0.994 };
 // existing default -- picking a different id here would just shift which
 // case renders "at 100%" without changing the fixed-drawer behavior.
 const CAB2_DRAWER_BASELINE_ID = 'cab2_01';
+// Per-side drawer inset in preview pixels; cabinet artwork keeps its size.
+const DRAWER_SIDE_INSET_PX = { cab2_01: 1 };
 
 // Measured left/right edges of each base style's own visible leg span
 // within its viewBox (most styles have a small margin on one or both sides
@@ -1601,6 +1603,11 @@ async function render() {
     layerDrawer.style.display = '';
     layerDrawer.style.left = left; layerDrawer.style.top = top;
     layerDrawer.style.width = width; layerDrawer.style.height = height;
+    const drawerInsetPx = DRAWER_SIDE_INSET_PX[cabId] ?? 0;
+    if (drawerInsetPx) {
+      layerDrawer.style.left = `calc(${left} + ${drawerInsetPx}px)`;
+      layerDrawer.style.width = `calc(${width} - ${2 * drawerInsetPx}px)`;
+    }
 
     openingBacking.style.display = '';
     openingBacking.style.left = left; openingBacking.style.top = top;
@@ -2210,14 +2217,18 @@ async function buildCompositeCanvas(size) {
     // Fixed drawer rect (see drawerLeftFrac etc. above), not this cabinet's
     // own opening -- keeps the drawer's size/position constant across
     // cab2_* styles, matching the live preview.
-    const dx = drawerLeftFrac * SIZE, dy = drawerTopFrac * HEIGHT;
-    const dw = drawerWidthFrac * SIZE, dh = drawerHeightFrac * HEIGHT;
+    let dx = drawerLeftFrac * SIZE, dw = drawerWidthFrac * SIZE;
+    const dy = drawerTopFrac * HEIGHT, dh = drawerHeightFrac * HEIGHT;
 
     // Dark backing behind the drawer, matching the live preview's
     // .opening-backing -- otherwise any gap the drawer front doesn't cover
     // shows the white page background through it.
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(dx, dy, dw, dh);
+
+    const drawerInsetPx = (DRAWER_SIDE_INSET_PX[cabId] ?? 0) * (SIZE / STAGE_SIZE_PX);
+    dx += drawerInsetPx;
+    dw -= 2 * drawerInsetPx;
 
     const drTinted = await tintSurfaceCanvas(svgPath('drawers', locked.drawers), drawerColor, Math.round(dw), Math.round(dh));
     ctx.drawImage(drTinted, dx, dy, dw, dh);
